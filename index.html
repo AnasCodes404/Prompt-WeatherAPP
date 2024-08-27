@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather API App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: url('https://wallpapers.com/images/hd/clouds-4k-4y7kl2qe79x3lcxi.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background 0.5s ease-in-out;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            width: 350px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        p, h2 {
+            margin: 10px 0;
+            color: #ffffff;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid #fff;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            width: 100%;
+            background: transparent;
+            color: #fff;
+        }
+
+        input::placeholder {
+            color: #ccc;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .weather-icon {
+            margin: 20px 0;
+            width: 80px;
+            height: 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather App</h1>
+        <input type="text" id="city" placeholder="Enter city name">
+        <button onclick="getWeather()">Get Weather</button>
+        <h2 id="weather-result"></h2>
+        <img id="weather-icon" class="weather-icon" src="" alt="Weather Icon">
+        <p id="weather-description"></p>
+        <p id="temperature"></p>
+    </div>
+
+    <script>
+        async function getWeather() {
+            const city = document.getElementById('city').value.trim();
+            
+            if (!city) {
+                alert("Please enter a city name");
+                return;
+            }
+
+            try {
+                const geoResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}`);
+                const geoData = await geoResponse.json();
+
+                if (geoData.results && geoData.results.length > 0) {
+                    const lat = geoData.results[0].latitude;
+                    const lon = geoData.results[0].longitude;
+
+                    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+                    const weatherResponse = await fetch(weatherUrl);
+                    const weatherData = await weatherResponse.json();
+                    const weather = weatherData.current_weather;
+
+                    document.getElementById('weather-result').innerText = `Weather in ${city}`;
+                    document.getElementById('weather-description').innerText = `Weather: ${weather.weathercode}`;
+                    document.getElementById('temperature').innerText = `Temperature: ${weather.temperature}°C`;
+                    document.getElementById('weather-icon').src = getWeatherIcon(weather.weathercode);
+
+                    // Change background based on weather conditions
+                    if (weather.weathercode >= 61 && weather.weathercode <= 67 || weather.weathercode >= 80 && weather.weathercode <= 82) {
+                        document.body.style.backgroundImage = "url('https://c4.wallpaperflare.com/wallpaper/292/594/504/rain-photography-water-night-wallpaper-preview.jpg')";
+                    } else if (weather.temperature <= 0) { // Cold weather
+                        document.body.style.backgroundImage = "url('https://w0.peakpx.com/wallpaper/541/833/HD-wallpaper-sunny-winter-day-winter-mountain-snow-sunny-day-beautiful-sky.jpg')";
+                    } else if (weather.temperature >= 30) { // Hot weather
+                        document.body.style.backgroundImage = "url('https://img.freepik.com/free-vector/realistic-hot-background_23-2149443988.jpg')";
+                    } else {
+                        document.body.style.backgroundImage = "url('https://wallpapers.com/images/hd/clouds-4k-4y7kl2qe79x3lcxi.jpg')";
+                    }
+                } else {
+                    document.getElementById('weather-result').innerText = 'City not found';
+                    document.getElementById('weather-description').innerText = '';
+                    document.getElementById('temperature').innerText = '';
+                    document.getElementById('weather-icon').src = '';
+                }
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+                document.getElementById('weather-result').innerText = 'Error fetching weather data';
+                document.getElementById('weather-description').innerText = '';
+                document.getElementById('temperature').innerText = '';
+                document.getElementById('weather-icon').src = '';
+            }
+        }
+
+        function getWeatherIcon(code) {
+            const iconMap = {
+                0: 'https://open-meteo.com/img/weather_icons/clear_day.png', // Clear
+                1: 'https://open-meteo.com/img/weather_icons/partly_cloudy_day.png', // Mainly clear
+                2: 'https://open-meteo.com/img/weather_icons/cloudy.png', // Cloudy
+                3: 'https://open-meteo.com/img/weather_icons/overcast.png', // Overcast
+                45: 'https://open-meteo.com/img/weather_icons/fog.png', // Fog
+                48: 'https://open-meteo.com/img/weather_icons/fog.png', // Depositing rime fog
+                51: 'https://open-meteo.com/img/weather_icons/drizzle.png', // Drizzle: Light
+                53: 'https://open-meteo.com/img/weather_icons/drizzle.png', // Drizzle: Moderate
+                55: 'https://open-meteo.com/img/weather_icons/drizzle.png', // Drizzle: Dense
+                56: 'https://open-meteo.com/img/weather_icons/freezing_drizzle.png', // Freezing Drizzle: Light
+                57: 'https://open-meteo.com/img/weather_icons/freezing_drizzle.png', // Freezing Drizzle: Dense
+                61: 'https://open-meteo.com/img/weather_icons/rain.png', // Rain: Slight
+                63: 'https://open-meteo.com/img/weather_icons/rain.png', // Rain: Moderate
+                65: 'https://open-meteo.com/img/weather_icons/rain.png', // Rain: Heavy
+                66: 'https://open-meteo.com/img/weather_icons/freezing_rain.png', // Freezing Rain: Light
+                67: 'https://open-meteo.com/img/weather_icons/freezing_rain.png', // Freezing Rain: Heavy
+                71: 'https://open-meteo.com/img/weather_icons/snow.png', // Snowfall: Slight
+                73: 'https://open-meteo.com/img/weather_icons/snow.png', // Snowfall: Moderate
+                75: 'https://open-meteo.com/img/weather_icons/snow.png', // Snowfall: Heavy
+                77: 'https://open-meteo.com/img/weather_icons/snow.png', // Snow grains
+                80: 'https://open-meteo.com/img/weather_icons/showers.png', // Rain showers: Slight
+                81: 'https://open-meteo.com/img/weather_icons/showers.png', // Rain showers: Moderate
+                82: 'https://open-meteo.com/img/weather_icons/showers.png', // Rain showers: Violent
+                85: 'https://open-meteo.com/img/weather_icons/snow_showers.png', // Snow showers slight
+                86: 'https://open-meteo.com/img/weather_icons/snow_showers.png', // Snow showers heavy
+                95: 'https://open-meteo.com/img/weather_icons/thunderstorm.png', // Thunderstorm: Slight
+                96: 'https://open-meteo.com/img/weather_icons/thunderstorm_hail.png', // Thunderstorm with slight hail
+                99: 'https://open-meteo.com/img/weather_icons/thunderstorm_hail.png', // Thunderstorm with heavy hail
+            };
+            return iconMap[code] || '';
+        }
+
+        // Fetch initial weather data if city is provided (optional)
+        // getWeather();
+    </script>
+</body>
+</html>
